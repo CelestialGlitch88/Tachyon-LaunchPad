@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Minecraft enchantment ordering calculator">
+<title>Enchantment Calculator · Minecraft Anvil Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Pixelify+Sans:wght@400;500;600;700&amp;family=Press+Start+2P&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b12;--panel:#0d1420;--panel2:#111b2a;--line:#223149;
+  --text:#e8f0fb;--muted:#91a4bc;--accent:#72e7ff;--accent2:#8b7cff;
+  --good:#65e6a5;--warn:#ffd166;--bad:#ff6b7a;--shadow:0 18px 55px #0008;
+  --radius:16px;
+
+  --ui-font: "Lexend", Inter, ui-sans-serif, system-ui, -apple-system,
+             BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --display-font: "Space Grotesk", "Lexend", ui-sans-serif, system-ui, sans-serif;
+  --pixel-font: "Pixelify Sans", "Lexend", ui-sans-serif, system-ui, sans-serif;
+  --retro-font: "Press Start 2P", "Lexend", monospace;
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg)}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:var(--ui-font);
+  background:
+    radial-gradient(circle at 15% 0%,#173d5d55,transparent 34rem),
+    radial-gradient(circle at 90% 12%,#3b286b44,transparent 30rem),
+    linear-gradient(#070b12,#080d15 55%,#060910);
+  line-height:1.5;
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.45;
+  background-image:
+    radial-gradient(circle,#fff 0 1px,transparent 1.5px),
+    radial-gradient(circle,#8ddcff 0 1px,transparent 1.5px);
+  background-size:97px 113px,173px 157px;
+  background-position:17px 23px,81px 59px;
+  mask-image:linear-gradient(to bottom,#fff,transparent 85%);
+}
+button,select,input{font:inherit}
+button{cursor:pointer}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Animated starfield (drawn behind the interface) ─────────── */
+#starfield{
+  position:fixed;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  z-index:0;
+}
+
+.app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:34px 0 28px;position:relative;z-index:1}
+.hero{display:flex;justify-content:space-between;gap:22px;align-items:end;margin-bottom:22px}
+.kicker{
+  display:flex;align-items:center;gap:10px;color:var(--accent);
+  font-family:var(--retro-font);
+  font-size:.58rem;line-height:1.5;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+.kicker:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent);flex:none}
+h1,h2,h3{font-family:var(--display-font)}
+h1{font-size:clamp(2rem,4vw,3.25rem);line-height:1.03;letter-spacing:-.045em;margin:8px 0 8px}
+.subtitle{color:var(--muted);max-width:720px;margin:0}
+.credits{font-size:.78rem;color:#647992;text-align:right;white-space:nowrap}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.82fr);gap:18px}
+.panel{
+  background:linear-gradient(145deg,#101a29ee,#0a111cee);
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  overflow:hidden;backdrop-filter:blur(12px);
+}
+.panel-head{padding:18px 20px 14px;border-bottom:1px solid #1b2940;display:flex;justify-content:space-between;gap:15px;align-items:center}
+.panel-head h2{font-size:1rem;margin:0;letter-spacing:-.01em}
+.panel-body{padding:18px 20px}
+.field{display:grid;gap:7px;margin-bottom:16px}
+.label{font-size:.73rem;color:#8195ae;font-weight:750;text-transform:uppercase;letter-spacing:.1em}
+select{
+  width:100%;padding:13px 40px 13px 14px;color:var(--text);background:#0a111b;
+  border:1px solid #293a54;border-radius:11px;outline:none;
+  appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#8ba2bd 50%),linear-gradient(135deg,#8ba2bd 50%,transparent 50%);
+  background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px;background-repeat:no-repeat;
+}
+select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #72e7ff18}
+.explain{
+  border:1px solid #1e3048;background:#0a121eaa;border-radius:12px;padding:13px 15px;
+  color:#9aacc1;font-size:.82rem;margin-bottom:17px
+}
+.explain strong{color:#d9e6f5}
+.explain summary{cursor:pointer;color:#c9d8e9;font-weight:700}
+.enchant-wrap{border:1px solid #1d2c42;border-radius:13px;overflow:hidden;background:#080f18}
+.table-scroll{overflow:auto;max-height:510px}
+table{width:100%;border-collapse:collapse;min-width:390px}
+th{
+  position:sticky;top:0;z-index:2;background:#0d1724;
+  color:#7288a3;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;padding:10px 7px;
+}
+th:first-child{text-align:left;padding-left:12px;min-width:165px}
+td{padding:6px 6px;border-top:1px solid #172338;text-align:center}
+td:first-child{text-align:left;padding-left:12px}
+tr.group1{background:#0b1420}
+tr.group2{background:#0d1724}
+.enchant-name{
+  display:inline-flex;align-items:center;gap:6px;color:#d7e4f3;
+  font-family:var(--pixel-font);
+  font-size:.9rem;letter-spacing:.01em;
+  max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.enchant-name:before{content:"◆";font-size:.5rem;color:#58718e}
+.level-button{
+  width:36px;height:32px;padding:0;
+  border:1px solid #2a3d58;border-radius:8px;
+  background:#111d2c;color:#71869f;
+  font-size:.78rem;font-weight:800;
+  transition:transform .12s ease, border-color .12s ease, color .12s ease, background .12s ease;
+}
+.level-button:hover:not(:disabled){transform:translateY(-1px);border-color:#58708e;color:#dbe8f6}
+.level-button.on{color:#041018;background:linear-gradient(135deg,var(--accent),#a2f1ff);border-color:#b9f5ff;box-shadow:0 0 18px #72e7ff35}
+.level-button.off{opacity:.65}
+.level-button:disabled{cursor:not-allowed;opacity:.22}
+
+/* Toggles & radios: padded, comfortable hit area, gap from wrap border */
+.options{
+  display:flex;flex-wrap:wrap;gap:10px;
+  padding:16px 16px 0;margin:0;
+}
+.toggle,.radio{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:11px 15px;
+  border:1px solid #203149;
+  border-radius:10px;
+  background:#0a121e;
+  color:#9fb1c7;
+  font-size:.8rem;
+  cursor:pointer;
+  transition:border-color .18s ease, color .18s ease, background .18s ease;
+}
+.toggle:hover,.radio:hover{border-color:#3a506d;color:#d6e3f1}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
+
+/* Actions row: grid centers the primary button, padding keeps it off the border */
+.actions{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:12px;
+  padding:16px;
+  margin:0;
+}
+.actions > .primary{grid-column:2;justify-self:center}
+.actions > .count{grid-column:3;justify-self:start;text-align:left}
+
+/* Primary button: bigger, breathier, space for glow */
+.primary{
+  border:1px solid transparent;
+  border-radius:11px;
+  padding:14px 26px;
+  font-family:var(--display-font);
+  font-weight:700;
+  font-size:.95rem;
+  letter-spacing:.01em;
+  color:#031019;
+  background:linear-gradient(135deg,var(--accent),#a8f4ff);
+  box-shadow:0 7px 25px #72e7ff22;
+  white-space:nowrap;
+}
+.primary:hover:not(:disabled){filter:brightness(1.05);transform:translateY(-1px)}
+.primary:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;transform:none}
+
+.count{font-size:.75rem;color:#71869f}
+.result-empty{color:#758aa3;font-size:.88rem}
+.progress{display:none;align-items:center;gap:10px;padding:12px 14px;border:1px solid #24415b;border-radius:11px;background:#0b1825;color:#a7bad0;margin-bottom:14px}
+.progress.show{display:flex}
+.spinner{width:16px;height:16px;border:2px solid #35506d;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.solution{display:none}
+.solution.show{display:block;animation:rise .25s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.result-title{margin:0 0 5px;font-size:1.18rem}
+.timing{color:#6f849d;font-size:.75rem;margin:0 0 14px}
+.cost{
+  display:flex;justify-content:space-between;align-items:end;gap:12px;padding:14px;
+  background:linear-gradient(135deg,#132536,#0c1725);border:1px solid #28415a;border-radius:13px;margin-bottom:16px
+}
+.cost-label{color:#7f96af;font-size:.7rem;text-transform:uppercase;letter-spacing:.09em}
+.cost-value{font-family:var(--display-font);font-size:1.45rem;font-weight:700;letter-spacing:-.03em;color:#eaf8ff}
+.steps-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:#7187a0;margin:0 0 9px}
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:9px}
+.step{
+  position:relative;padding:12px 13px 12px 46px;border:1px solid #1d2d43;background:#0a121e;border-radius:11px;
+  font-size:.83rem;color:#d5e2ef
+}
+.step:before{
+  content:counter(step);counter-increment:step;position:absolute;left:13px;top:12px;
+  width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
+  background:#14283a;color:var(--accent);
+  font-family:var(--pixel-font);font-size:.8rem;font-weight:700;line-height:1;
+}
+.steps{counter-reset:step}
+.step small{display:block;color:#71869f;font-size:.72rem;margin-top:5px}
+.item-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;
+  background:#152235;color:#dceaf8;font-weight:600;
+  font-family:var(--pixel-font);font-size:.88rem;letter-spacing:.01em;
+}
+.item-chip.book{background:#241f42;color:#d8caff}
+.item-chip.item{background:#182b25;color:#bff1d7}
+.note,.warning,.error{
+  margin-top:13px;padding:11px 12px;border-radius:10px;font-size:.76rem
+}
+.note{background:#0c1722;border:1px solid #20334a;color:#8298b0}
+.warning{display:none;background:#241e0e;border:1px solid #4e4122;color:#d8c487}
+.error{display:none;background:#2b1118;border:1px solid #572532;color:#ffabb5}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:18px}
+.info-card{padding:12px;border:1px solid #1b2b42;background:#0a111c99;border-radius:11px}
+.info-card b{display:block;font-size:.75rem;margin-bottom:3px;color:#d8e6f4}
+.info-card span{font-size:.7rem;color:#70859e}
+footer{padding:20px 2px 4px;color:#5d7189;font-size:.72rem;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+footer a{color:#7890ab}
+.license{margin-top:12px}
+
+@media(max-width:850px){.layout{grid-template-columns:1fr}.credits{display:none}}
+@media(max-width:560px){
+  .app{width:min(100% - 16px,1180px);padding-top:22px}
+  .panel-body,.panel-head{padding-left:14px;padding-right:14px}
+  h1{font-size:2rem}
+  .info-grid{grid-template-columns:1fr}
+  .enchant-name{max-width:135px}
+  table{min-width:360px}
+
+  /* Stack the actions row on mobile */
+  .actions{grid-template-columns:1fr}
+  .actions > .primary{grid-column:1;justify-self:center;width:100%;max-width:280px}
+  .actions > .count{grid-column:1;justify-self:center;text-align:center}
+}
+
+/* Compute Path>> hover: gentle, steady warm glow (no pulsating) */
+#calculateBtn, #calculate, button[data-action="calculate"] {
+  transition: color .25s ease, border-color .25s ease,
+              box-shadow .25s ease, text-shadow .25s ease,
+              background .25s ease, transform .18s ease;
+}
+#calculateBtn:hover:not(:disabled),
+#calculate:hover:not(:disabled),
+button[data-action="calculate"]:hover:not(:disabled) {
+  color: #fff7dd;
+  border-color: #ffc266;
+  background: linear-gradient(135deg, #ff9a4d, #ffc94d);
+  text-shadow: 0 0 6px rgba(255, 175, 70, .30);
+  box-shadow:
+    0 0 10px rgba(255, 150, 40, .22),
+    0 0 20px rgba(255, 190, 60, .14),
+    inset 0 0 8px rgba(255, 225, 150, .06);
+}
+</style>
+</head>
+<body>
+<canvas id="starfield" aria-hidden="true" width="1264" height="960" style="width: 1264px; height: 960px;"></canvas>
+<main class="app">
+  <header class="hero">
+    <div>
+      <div class="kicker">Anvil Lab · Minecraft</div>
+      <h1>The Galactic Spellbinder</h1>
+      <p class="subtitle">Find a cheap, valid order for combining enchanted books and gear without wandering into <b>Too Expensive!</b> territory.</p>
+    </div>
+    <div class="credits">Offline · No libraries · No tracking</div>
+  </header>
+
+  <section class="layout">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>1 · Build your item</h2>
+        <span id="selectionCount" class="count">0 enchants</span>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label class="label" for="item">Base item</label>
+          <select id="item"><option value="">Choose an item to enchant</option><option value="helmet">Helmet</option><option value="chestplate">Chestplate</option><option value="leggings">Leggings</option><option value="boots">Boots</option><option value="turtle_shell">Turtle Shell</option><option value="elytra">Elytra</option><option value="sword">Sword</option><option value="axe">Axe</option><option value="mace">Mace</option><option value="spear">Spear</option><option value="trident">Trident</option><option value="bow">Bow</option><option value="crossbow">Crossbow</option><option value="pickaxe">Pickaxe</option><option value="shovel">Shovel</option><option value="hoe">Hoe</option><option value="shield">Shield</option><option value="brush">Brush</option><option value="fishing_rod">Fishing Rod</option><option value="shears">Shears</option><option value="flint_and_steel">Flint And Steel</option><option value="carrot_on_a_stick">Carrot On A Stick</option><option value="warped_fungus_on_a_stick">Warped Fungus On A Stick</option><option value="pumpkin">Pumpkin</option><option value="book">Book</option></select>
+        </div>
+
+        <details class="explain">
+          <summary>How the calculator thinks</summary>
+          <div style="margin-top:9px">
+            Each anvil operation adds a <strong>prior-work penalty</strong>. The calculator searches possible merge trees and keeps the cheapest candidates while respecting the 39-level anvil cap. Select the enchantment level you already have, then let the machine do the combinatorial suffering.
+          </div>
+        </details>
+
+        <div id="enchants" class="enchant-wrap" hidden="">
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Enchantment</th><th colspan="5">Level</th></tr></thead>
+              <tbody id="enchantBody"></tbody>
+            </table>
+          </div>
+          <div class="options">
+            <label class="toggle" title="Allows normally incompatible enchantments such as Protection + Fire Protection.">
+              <input type="checkbox" id="allow_incompatible"> Allow incompatible
+            </label>
+            <label class="toggle" title="The normal recommendation is ten or fewer enchantments. More can become computationally expensive.">
+              <input type="checkbox" id="allow_many"> Allow &gt;10
+            </label>
+          </div>
+          <div class="actions">
+            <button id="calculate" class="primary" disabled="">Compute Path&gt;&gt;</button>
+            <span id="selectionHint" class="count">Select at least one level</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>2 · Optimize</h2>
+        <span class="count">39-level cap</span>
+      </div>
+      <div class="panel-body">
+        <details class="explain" open="">
+          <summary>Which objective should I use?</summary>
+          <div style="margin-top:9px">
+            <strong>Least XP / Levels</strong> minimizes the total XP cost represented by the calculated merge sequence. <strong>Least prior work</strong> prioritizes lower accumulated anvil work penalties. In practice, XP is usually the useful default.
+          </div>
+        </details>
+
+        <div class="options" style="margin-top:0">
+          <label class="radio"><input type="radio" name="mode" value="levels" checked=""> Least XP</label>
+          <label class="radio"><input type="radio" name="mode" value="prior_work"> Least prior work</label>
+        </div>
+
+        <div id="progress" class="progress"><span class="spinner"></span><span>Calculating the optimal order…</span></div>
+        <div id="error" class="error"></div>
+
+        <section id="solution" class="solution">
+          <h2 id="solutionTitle" class="result-title">Optimal order found</h2>
+          <p id="timing" class="timing"></p>
+          <div class="cost">
+            <div><div class="cost-label">Total anvil cost</div><div id="cost" class="cost-value">—</div></div>
+            <div id="costMode" class="cost-label">XP objective</div>
+          </div>
+          <h3 class="steps-title">Steps</h3>
+          <ol id="steps" class="steps"></ol>
+          <div id="xpNote" class="note" hidden=""></div>
+        </section>
+
+        <div id="empty" class="result-empty">Choose an item and enchantments on the left. Humanity has invented enough buttons for this to be necessary.</div>
+
+        <div class="info-grid">
+          <div class="info-card"><b>Prior work</b><span>Every anvil operation increases the hidden work penalty.</span></div>
+          <div class="info-card"><b>Compatibility</b><span>Incompatible enchantments are blocked unless you override them.</span></div>
+          <div class="info-card"><b>Starting state</b><span>Books and gear are assumed to have zero prior work.</span></div>
+          <div class="info-card"><b>Computation</b><span>The search runs in a Web Worker so the interface stays responsive.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Based on iamcal's enchant-order, made by GalacticLagg19. UI Copyright © 2026 GalacticLagg19 under GNU Affero GPL 3.0</span>
+    <span><a href="https://github.com/iamcal/enchant-order" target="_blank" rel="noopener">Original project</a> · <a href="https://minecraft.wiki/w/Anvil_mechanics" target="_blank" rel="noopener">Anvil mechanics</a></span>
+  </footer>
+  <details class="license" open="">
+    <summary>License &amp; attribution</summary>
+    <p style="font-size:.7rem;color:#60758d">Original enchant-order code is licensed under the MIT License. Copyright © 2021 Cal Henderson. This page preserves that attribution while adding the GalacticLagg19 interface and packaging changes.</p>
+  </details>
+</main>
+
+<script>
+/* Embedded source data. No external data.js request. */
+const data = {
+    enchants: {
+        protection: { levelMax:"4", weight:"1", incompatible:["blast_protection","fire_protection","projectile_protection"], items:["helmet","chestplate","leggings","boots","turtle_shell"] },
+        aqua_affinity: { levelMax:"1", weight:"2", incompatible:[], items:["helmet","turtle_shell"] },
+        bane_of_arthropods: { levelMax:"5", weight:"1", incompatible:["smite","sharpness","density","breach"], items:["sword","axe","mace","spear"] },
+        blast_protection: { levelMax:"4", weight:"2", incompatible:["fire_protection","protection","projectile_protection"], items:["helmet","chestplate","leggings","boots","turtle_shell"] },
+        channeling: { levelMax:"1", weight:"4", incompatible:["riptide"], items:["trident"] },
+        depth_strider: { levelMax:"3", weight:"2", incompatible:["frost_walker"], items:["boots"] },
+        efficiency: { levelMax:"5", weight:"1", incompatible:[], items:["pickaxe","shovel","axe","hoe","shears"] },
+        feather_falling: { levelMax:"4", weight:"1", incompatible:[], items:["boots"] },
+        fire_aspect: { levelMax:"2", weight:"2", incompatible:[], items:["sword","mace","spear"] },
+        fire_protection: { levelMax:"4", weight:"1", incompatible:["blast_protection","protection","projectile_protection"], items:["helmet","chestplate","leggings","boots","turtle_shell"] },
+        flame: { levelMax:"1", weight:"2", incompatible:[], items:["bow"] },
+        fortune: { levelMax:"3", weight:"2", incompatible:["silk_touch"], items:["pickaxe","shovel","axe","hoe"] },
+        frost_walker: { levelMax:"2", weight:"2", incompatible:["depth_strider"], items:["boots"] },
+        impaling: { levelMax:"5", weight:"2", incompatible:[], items:["trident"] },
+        infinity: { levelMax:"1", weight:"4", incompatible:["mending"], items:["bow"] },
+        knockback: { levelMax:"2", weight:"1", incompatible:[], items:["sword","spear"] },
+        looting: { levelMax:"3", weight:"2", incompatible:[], items:["sword","spear"] },
+        loyalty: { levelMax:"3", weight:"1", incompatible:["riptide"], items:["trident"] },
+        luck_of_the_sea: { levelMax:"3", weight:"2", incompatible:[], items:["fishing_rod"] },
+        lunge: { levelMax:"3", weight:"1", incompatible:[], items:["spear"] },
+        lure: { levelMax:"3", weight:"2", incompatible:[], items:["fishing_rod"] },
+        mending: { levelMax:"1", weight:"2", incompatible:["infinity"], items:["helmet","chestplate","leggings","boots","pickaxe","shovel","axe","sword","hoe","brush","fishing_rod","bow","shears","flint_and_steel","carrot_on_a_stick","warped_fungus_on_a_stick","shield","elytra","trident","turtle_shell","crossbow","mace","spear"] },
+        multishot: { levelMax:"1", weight:"2", incompatible:["piercing"], items:["crossbow"] },
+        piercing: { levelMax:"4", weight:"1", incompatible:["multishot"], items:["crossbow"] },
+        power: { levelMax:"5", weight:"1", incompatible:[], items:["bow"] },
+        projectile_protection: { levelMax:"4", weight:"1", incompatible:["protection","blast_protection","fire_protection"], items:["helmet","chestplate","leggings","boots","turtle_shell"] },
+        punch: { levelMax:"2", weight:"2", incompatible:[], items:["bow"] },
+        quick_charge: { levelMax:"3", weight:"1", incompatible:[], items:["crossbow"] },
+        respiration: { levelMax:"3", weight:"2", incompatible:[], items:["helmet","turtle_shell"] },
+        riptide: { levelMax:"3", weight:"2", incompatible:["channeling","loyalty"], items:["trident"] },
+        sharpness: { levelMax:"5", weight:"1", incompatible:["bane_of_arthropods","smite"], items:["sword","axe","spear"] },
+        silk_touch: { levelMax:"1", weight:"4", incompatible:["fortune"], items:["pickaxe","shovel","axe","hoe"] },
+        smite: { levelMax:"5", weight:"1", incompatible:["bane_of_arthropods","sharpness","density","breach"], items:["sword","axe","mace","spear"] },
+        soul_speed: { levelMax:"3", weight:"4", incompatible:[], items:["boots"] },
+        sweeping: { levelMax:"3", weight:"2", incompatible:[], items:["sword"] },
+        swift_sneak: { levelMax:"3", weight:"4", incompatible:[], items:["leggings"] },
+        thorns: { levelMax:"3", weight:"4", incompatible:[], items:["helmet","chestplate","leggings","boots","turtle_shell"] },
+        unbreaking: { levelMax:"3", weight:"1", incompatible:[], items:["helmet","chestplate","leggings","boots","pickaxe","shovel","axe","sword","hoe","brush","fishing_rod","bow","shears","flint_and_steel","carrot_on_a_stick","warped_fungus_on_a_stick","shield","elytra","trident","turtle_shell","crossbow","mace","spear"] },
+        binding_curse: { levelMax:"1", weight:"4", incompatible:[], items:["helmet","chestplate","leggings","boots","elytra","pumpkin","helmet","turtle_shell"] },
+        vanishing_curse: { levelMax:"1", weight:"4", incompatible:[], items:["helmet","chestplate","leggings","boots","pickaxe","shovel","axe","sword","hoe","brush","fishing_rod","bow","shears","flint_and_steel","carrot_on_a_stick","warped_fungus_on_a_stick","shield","elytra","pumpkin","helmet","trident","turtle_shell","crossbow","mace","spear"] },
+        density: { levelMax:"5", weight:"1", incompatible:["breach","smite","bane_of_arthropods"], items:["mace"] },
+        breach: { levelMax:"4", weight:"2", incompatible:["density","smite","bane_of_arthropods"], items:["mace"] },
+        wind_burst: { levelMax:"3", weight:"2", incompatible:[], items:["mace"] }
+    },
+    items: ['helmet','chestplate','leggings','boots','turtle_shell','elytra','sword','axe','mace','spear','trident','bow','crossbow','pickaxe','shovel','hoe','shield','brush','fishing_rod','shears','flint_and_steel','carrot_on_a_stick','warped_fungus_on_a_stick','pumpkin','book']
+};
+
+const workerSource = "let ID_LIST = {};\nlet ENCHANTMENT2WEIGHT = [];\nconst MAXIMUM_MERGE_LEVELS = 39;\nlet ITEM_NAME;\nlet results = {};\n\n\nonmessage = event => {\n    if (event.data.msg === 'set_data') {\n        const { enchants } = event.data.data;\n\n        let id = 0;\n        for (let enchant in enchants) {\n            const enchant_data = enchants[enchant];\n\n            const weight = enchant_data['weight'];\n\n            ID_LIST[enchant] = id;\n            ENCHANTMENT2WEIGHT[id] = weight;\n            id++;\n        }\n        Object.freeze(ENCHANTMENT2WEIGHT);\n        Object.freeze(ID_LIST);\n    }\n    if (event.data.msg === 'process') {\n        process(event.data.item, event.data.enchants, event.data.mode);\n    }\n};\n\n\nfunction process(item, enchants, mode = 'levels') {\n    ITEM_NAME = item\n    Object.freeze(ITEM_NAME);\n\n    let enchant_objs = []\n    enchants.forEach(enchant => { // Creates objects of enchants\n        let id = ID_LIST[enchant[0]]\n        let e_obj = new item_obj('book', enchant[1] * ENCHANTMENT2WEIGHT[id], [id])\n        e_obj.c = {I: id, l: e_obj.l, w: e_obj.w}\n        enchant_objs.push(e_obj)\n    });\n    // Finds the most expensive enchant\n    let mostExpensive = enchant_objs.reduce((maxIndex, item, currentIndex, array) => {\n        return item.l > array[maxIndex].l ? currentIndex : maxIndex;\n    }, 0);\n\n    let id;\n    if (ITEM_NAME === 'book') {\n        id = enchant_objs[mostExpensive].e[0]\n        item = new item_obj(id, enchant_objs[mostExpensive].l) // Makes the most expensive book the base\n        item.e.push(id)\n        enchant_objs.splice(mostExpensive, 1)\n        if (enchant_objs.length === 0) {\n            item.c = { I: id, l: item.l, w: 0 }\n            postMessage({ msg: 'complete', item_obj: item, instructions: [], extra: [0, 0], enchants });\n            results = {};\n            return;\n        }\n        // Finds a new most expensive enchant\n        mostExpensive = enchant_objs.reduce((maxIndex, item, currentIndex, array) => {\n            return item.l > array[maxIndex].l ? currentIndex : maxIndex;\n        }, 0);\n    } else {\n        item = new item_obj('item')\n    }\n    let merged_item = new MergeEnchants(item, enchant_objs[mostExpensive]) // Merges the most expensive enchant with the item\n    merged_item.c.L = {I: item.i, l: item.l, w: 0}\n    enchant_objs.splice(mostExpensive, 1)\n\n    let all_objs = enchant_objs.concat(merged_item)\n    let cheapest_items = cheapestItemsFromList(all_objs);\n\n    let cheapest_cost = Infinity;\n    let cheapest_key;\n    for (const key in cheapest_items) {\n        const item = cheapest_items[key];\n        let item_cost;\n\n        if (mode === 'levels') {\n            item_cost = item.x;\n        } else {\n            item_cost = item.w;\n        }\n        if (item_cost < cheapest_cost) {\n            cheapest_cost = item_cost;\n            cheapest_key = key;\n        }\n    }\n    const cheapest_item = cheapest_items[cheapest_key]\n\n    let instructions = getInstructions(cheapest_item.c);\n\n    let max_levels = 0\n    instructions.forEach(key => {\n        max_levels += key[2]\n    });\n    let max_xp = experience(max_levels)\n\n    postMessage({\n        msg: 'complete',\n        item_obj: cheapest_item,\n        instructions: instructions,\n        extra: [max_levels, max_xp],\n        enchants: enchants\n    });\n\n    results = {}\n}\n\n\nfunction getInstructions(comb) {\n    let instructions = [];\n    let child_instructions;\n    for (const key in comb) {\n        if (key === 'L' || key === 'R') {\n            if (typeof (comb[key].I) === 'undefined') {\n                child_instructions = getInstructions(comb[key])\n                child_instructions.forEach(single_instruction => {\n                    instructions.push(single_instruction);\n                })\n            }\n            let id;\n            if (Number.isInteger(comb[key].I)) {\n                id = comb[key].I\n                comb[key].I = Object.keys(ID_LIST).find(key => ID_LIST[key] === id);\n            } else if (typeof (comb[key].I) === 'string' && !Object.keys(ID_LIST).includes(comb[key].I)) {\n                comb[key].I = ITEM_NAME\n            }\n        }\n    }\n    let merge_cost;\n    if (Number.isInteger(comb.R.v)) {\n        merge_cost = comb.R.v + 2 ** comb.L.w - 1 + 2 ** comb.R.w - 1\n    } else {\n        merge_cost = comb.R.l + 2 ** comb.L.w - 1 + 2 ** comb.R.w - 1\n    }\n    let work = Math.max(comb.L.w, comb.R.w) + 1\n    const single_instruction = [comb.L, comb.R, merge_cost, experience(merge_cost), 2 ** work - 1];\n    instructions.push(single_instruction);\n    return instructions;\n}\n\n\nfunction combinations(set, k) {\n    let i, j, combs, head, tailcombs;\n\n    if (k > set.length || k <= 0) {\n        return [];\n    }\n\n    if (k === set.length) {\n        return [set];\n    }\n\n    if (k === 1) {\n        combs = [];\n        for (i = 0; i < set.length; i++) {\n            combs.push([set[i]]);\n        }\n        return combs;\n    }\n\n    combs = [];\n    for (i = 0; i < set.length - k + 1; i++) {\n        head = set.slice(i, i + 1);\n        tailcombs = combinations(set.slice(i + 1), k - 1);\n        for (j = 0; j < tailcombs.length; j++) {\n            combs.push(head.concat(tailcombs[j]));\n        }\n    }\n    return combs;\n}\n\n\nfunction hashFromItem(item_obj) {\n    const enchants = item_obj.e;\n    const sorted_ids = [...enchants].sort((a,b)=>a-b);\n    const item_namespace = item_obj.i[0];\n    const work = item_obj.w;\n    return [item_namespace, sorted_ids, work];\n}\n\n\nfunction memoizeHashFromArguments(arguments) {\n    let items = arguments[0];\n    let hashes = new Array(items.length);\n\n    items.forEach((item, index) => {\n        hashes[index] = hashFromItem(item);\n    });\n    return hashes;\n}\n\n\nconst memoizeCheapest = func => {\n\n    return (...arguments) => {\n        const args_key = memoizeHashFromArguments(arguments);\n        if (!results[args_key]) {\n            results[args_key] = func(...arguments);\n        }\n        return results[args_key];\n    };\n};\n\n\nconst cheapestItemsFromList = memoizeCheapest(items => {\n    let work2item = {};\n    const item_count = items.length;\n\n    switch (item_count) {\n        case 1: {\n            const item = items[0];\n            const work = item.w;\n            work2item[work] = item;\n            return work2item;\n        }\n        case 2: {\n            const left_item = items[0],\n                right_item = items[1];\n            const cheapest_item = cheapestItemFromItems2(left_item, right_item);\n            const cheapest_work = cheapest_item.w;\n            work2item[cheapest_work] = cheapest_item;\n            return work2item;\n        }\n        default: {\n            return cheapestItemsFromListN(items, Math.floor(item_count / 2));\n        }\n    }\n});\n\n\nfunction cheapestItemFromItems2(left_item, right_item) {\n\n    if (right_item.i === 'item') {\n        return new MergeEnchants(right_item, left_item);\n    } else if (left_item.i === 'item') {\n        return new MergeEnchants(left_item, right_item);\n    }\n\n    let normal_item_obj;\n    try {\n        normal_item_obj = new MergeEnchants(left_item, right_item);\n    } catch {\n        return new MergeEnchants(right_item, left_item);\n    }\n\n    let reversed_item_obj;\n    try {\n        reversed_item_obj = new MergeEnchants(right_item, left_item);\n    } catch {\n        return normal_item_obj;\n    }\n\n    const cheapest_work2item = compareCheapest(normal_item_obj, reversed_item_obj);\n    const prior_works = Object.keys(cheapest_work2item);\n    const prior_work = prior_works[0];\n    return cheapest_work2item[prior_work];\n}\n\n\nfunction cheapestItemsFromListN(items, max_subcount) {\n    const cheapest_work2item = {};\n    const cheapest_prior_works = [];\n\n    for (let subcount = 1; subcount <= max_subcount; subcount++) {\n        combinations(items, subcount).forEach(left_item => {\n            const right_item = items.filter(item_obj => !left_item.includes(item_obj));\n\n            const left_work2item = cheapestItemsFromList(left_item);\n            const right_work2item = cheapestItemsFromList(right_item);\n            const new_work2item = cheapestItemsFromDictionaries([left_work2item, right_work2item]);\n\n            for (let work in new_work2item) {\n                const new_item = new_work2item[work];\n                const prior_work_exists = cheapest_prior_works.includes(work);\n\n                if (prior_work_exists) {\n                    const cheapest_item = cheapest_work2item[work];\n                    const new_cheapest_work2item = compareCheapest(cheapest_item, new_item);\n                    cheapest_work2item[work] = new_cheapest_work2item[work];\n                } else {\n                    cheapest_work2item[work] = new_item;\n                    cheapest_prior_works.push(work);\n                }\n            }\n        });\n    }\n    return cheapest_work2item;\n}\n\n\nfunction compareCheapest(item1, item2) {\n    let work2item = {};\n\n    const work1 = item1.w\n    const work2 = item2.w\n\n    if (work1 === work2) {\n        const value1 = item1.l,\n            value2 = item2.l;\n        if (value1 === value2) {\n            const min_xp_cost1 = item1.x,\n                min_xp_cost2 = item2.x;\n            if (min_xp_cost1 <= min_xp_cost2) {\n                work2item[work1] = item1;\n            } else {\n                work2item[work2] = item2;\n            }\n        } else if (value1 < value2) {\n            work2item[work1] = item1;\n        } else {\n            work2item[work2] = item2;\n        }\n    } else {\n        work2item[work1] = item1;\n        work2item[work2] = item2;\n    }\n\n    return work2item;\n}\n\n\nfunction cheapestItemsFromDictionaries(work2items) {\n    const work2item_count = work2items.length;\n    switch (work2item_count) {\n        case 1:\n            return work2items[0];\n        case 2:\n            const left_work2item = work2items[0],\n                right_work2item = work2items[1];\n            return cheapestItemsFromDictionaries2(left_work2item, right_work2item);\n    }\n}\n\n\nfunction cheapestItemsFromDictionaries2(left_work2item, right_work2item) {\n    let cheapest_work2item = {};\n    const cheapest_prior_works = [];\n\n    for (let left_work in left_work2item) {\n        const left_item = left_work2item[left_work];\n\n        for (let right_work in right_work2item) {\n            const right_item = right_work2item[right_work];\n\n            let new_work2item;\n            try {\n                new_work2item = cheapestItemsFromList([left_item, right_item]);\n            } catch (error) {\n                const merge_levels_too_expensive = error instanceof MergeLevelsTooExpensiveError;\n                if (!merge_levels_too_expensive) {\n                    throw error;\n                }\n            }\n\n            for (let work in new_work2item) {\n                const new_item = new_work2item[work];\n                const prior_work_exists = cheapest_prior_works.includes(work);\n\n                if (prior_work_exists) {\n                    const cheapest_item = cheapest_work2item[work];\n                    const new_cheapest_work2item = compareCheapest(cheapest_item, new_item);\n                    cheapest_work2item[work] = new_cheapest_work2item[work];\n                } else {\n                    cheapest_work2item[work] = new_item;\n                    cheapest_prior_works.push(work);\n                }\n            }\n        }\n    }\n    cheapest_work2item = removeExpensiveCandidatesFromDictionary(cheapest_work2item);\n    return cheapest_work2item;\n}\n\n\nclass item_obj {\n    constructor(name, value = 0, id = []) {\n        this.i = name\n        this.e = id\n        this.c = {}\n        this.w = 0\n        this.l = value\n        this.x = 0\n    }\n}\n\n\nclass MergeEnchants extends item_obj {\n    constructor(left, right) {\n        const merge_cost = right.l + 2 ** left.w - 1 + 2 ** right.w - 1\n        if (merge_cost > MAXIMUM_MERGE_LEVELS) {\n            throw new MergeLevelsTooExpensiveError();\n        }\n        let new_value = left.l + right.l\n        super(left.i, new_value)\n        this.e = left.e.concat(right.e)\n        this.w = Math.max(left.w, right.w) + 1\n        this.x = left.x + right.x + experience(merge_cost)\n        this.c = {L: left.c, R: right.c, l: merge_cost, w: this.w, v: this.l}\n    }\n}\n\nconst experience = level => {\n    if (level === 0) {\n        return 0;\n    } else if (level <= 16) {\n        return level ** 2 + 6 * level\n    } else if (level <= 31) {\n        return 2.5 * level ** 2 - 40.5 * level + 360;\n    } else {\n        return 4.5 * level ** 2 - 162.5 * level + 2220;\n    }\n}\n\n\nfunction removeExpensiveCandidatesFromDictionary(work2item) {\n    const cheapest_work2item = {};\n    let cheapest_value;\n\n    for (let work in work2item) {\n        const item = work2item[work];\n        const value = item.l;\n\n        if (!(value >= cheapest_value)) {\n            cheapest_work2item[work] = item;\n            cheapest_value = value;\n        }\n    }\n    return cheapest_work2item;\n}\n\n\nclass MergeLevelsTooExpensiveError extends Error {\n    constructor(message = 'merge levels is above maximum allowed') {\n        super(message);\n        this.name = 'MergeLevelsTooExpensiveError';\n    }\n}\n";
+const workerUrl = URL.createObjectURL(new Blob([workerSource], {type:"text/javascript"}));
+const worker = new Worker(workerUrl);
+worker.postMessage({ msg: "set_data", data: { enchants: data.enchants } });
+
+const $ = id => document.getElementById(id);
+const itemSelect = $("item");
+const enchantBody = $("enchantBody");
+const enchantsBox = $("enchants");
+const calculateButton = $("calculate");
+const progress = $("progress");
+const solution = $("solution");
+const empty = $("empty");
+const errorBox = $("error");
+const selectionCount = $("selectionCount");
+const selectionHint = $("selectionHint");
+
+const itemNames = Object.fromEntries(data.items.map(x => [x, pretty(x)]));
+const enchantNames = Object.fromEntries(Object.keys(data.enchants).map(x => [x, pretty(x)]));
+const nameToNamespace = Object.fromEntries(Object.entries(enchantNames).map(([k,v]) => [v,k]));
+const wikiLang = "en";
+
+function xpForLevel(level){
+  if(level <= 0) return 0;
+  if(level <= 16) return level ** 2 + 6 * level;
+  if(level <= 31) return 2.5 * level ** 2 - 40.5 * level + 360;
+  return 4.5 * level ** 2 - 162.5 * level + 2220;
+}
+function xpToLevel(xp){
+  xp = Math.max(0, Math.floor(Number(xp) || 0));
+  let level = 0;
+  while(level < 100 && xpForLevel(level + 1) <= xp) level++;
+  return level;
+}
+
+function pretty(s){
+  const special = {binding_curse:"Curse of Binding", vanishing_curse:"Curse of Vanishing", binding:"Curse of Binding", vanishing:"Curse of Vanishing"};
+  if (special[s]) return special[s];
+  return s.replaceAll("_"," ").replace(/\b\w/g,c=>c.toUpperCase());
+}
+function escapeHTML(s){
+  return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function wikiLink(ns){
+  return `https://${wikiLang}.minecraft.wiki/w/${encodeURIComponent(pretty(ns).replaceAll(" ","_"))}`;
+}
+
+data.items.forEach(ns=>{
+  const o=document.createElement("option");
+  o.value=ns;o.textContent=itemNames[ns]||pretty(ns);itemSelect.append(o);
+});
+
+function incompatibleGroup(start){
+  const seen=new Set(), queue=[start], out=[];
+  while(queue.length){
+    const ns=queue.shift();
+    if(!seen.has(ns)){
+      seen.add(ns);out.push(ns);
+    for(const next of data.enchants[ns]?.incompatible||[]){
+        if(!seen.has(next)) queue.push(next);
+      }
+    }
+  }
+  return out.sort();
+}
+
+function buildEnchantList(item){
+  enchantBody.replaceChildren();
+  const applicable = Object.keys(data.enchants).filter(ns =>
+    item==="book" || data.enchants[ns].items.includes(item)
+  );
+  const applicableSet=new Set(applicable);
+  const groups=[], grouped=new Set();
+
+  for(const ns of applicable){
+    if(!grouped.has(ns)){
+    const group=incompatibleGroup(ns).filter(x=>applicableSet.has(x));
+    group.forEach(x=>grouped.add(x));
+    groups.push(group);
+    }
+  }
+
+  for(let gi=0;gi<groups.length;gi++){
+    for(const ns of groups[gi]){
+      const max=Number(data.enchants[ns].levelMax);
+      const tr=document.createElement("tr");
+      tr.className=gi%2?"group2":"group1";
+
+      const td=document.createElement("td");
+      const a=document.createElement("a");
+      a.className="enchant-name";a.href=wikiLink(ns);a.target="_blank";a.rel="noopener";
+      a.textContent=enchantNames[ns]||pretty(ns);
+      a.title=`Open ${enchantNames[ns]||pretty(ns)} on Minecraft Wiki`;
+      td.append(a);tr.append(td);
+
+      for(let level=1;level<=5;level++){
+        const cell=document.createElement("td");
+        if(level<=max){
+          const b=document.createElement("button");
+          b.className="level-button off";
+          b.textContent=level;
+          b.dataset.ns=ns;b.dataset.level=level;
+          b.title=`${enchantNames[ns]} ${level}`;
+          cell.append(b);
+        }
+        tr.append(cell);
+      }
+      enchantBody.append(tr);
+    }
+  }
+  enchantsBox.hidden=false;
+  clearSelection();
+}
+
+function clearSelection(){
+  enchantBody.querySelectorAll(".level-button").forEach(b=>b.classList.remove("on"));
+  refreshButtons();
+}
+function allowIncompatible(){return $("allow_incompatible").checked}
+function allowMany(){return $("allow_many").checked}
+function selectedButtons(){return [...enchantBody.querySelectorAll(".level-button.on")]}
+function selectedFoundation(){
+  return selectedButtons().map(b=>[b.dataset.ns,Number(b.dataset.level)]);
+}
+function refreshButtons(){
+  const selected=selectedButtons();
+  const selectedNs=new Set(selected.map(b=>b.dataset.ns));
+  const selectedLevel=new Map(selected.map(b=>[b.dataset.ns,Number(b.dataset.level)]));
+  const incompatible=new Set();
+
+  if(!allowIncompatible()){
+    for(const ns of selectedNs){
+      for(const x of data.enchants[ns].incompatible||[]) incompatible.add(x);
+    }
+  }
+
+  for(const b of enchantBody.querySelectorAll(".level-button")){
+    const ns=b.dataset.ns, level=Number(b.dataset.level);
+    const blocked =
+      (selectedNs.has(ns) && selectedLevel.get(ns)!==level) ||
+      (!allowIncompatible() && incompatible.has(ns));
+    b.disabled=blocked;
+    b.classList.toggle("off",!b.classList.contains("on"));
+  }
+
+  const n=selected.length;
+  selectionCount.textContent=`${n} enchant${n===1?"":"s"}`;
+  selectionHint.textContent=n?`${n} selected`:"Select at least one level";
+  calculateButton.disabled=n===0;
+}
+
+enchantBody.addEventListener("click",e=>{
+  const b=e.target.closest(".level-button");
+  if(!b || b.disabled) return;
+  if(b.classList.contains("on")){
+    b.classList.remove("on");
+  }else{
+    if(!allowMany() && selectedButtons().length>=10){
+      showError("More than 10 enchantments can become extremely expensive to calculate. Enable “Allow >10” if you really want to proceed.");
+      return;
+    }
+    b.classList.add("on");
+  }
+  hideError();refreshButtons();
+});
+$("allow_incompatible").addEventListener("change",()=>{clearSelection();hideError()});
+$("allow_many").addEventListener("change",()=>{clearSelection();hideError()});
+itemSelect.addEventListener("change",()=>{
+  solution.classList.remove("show");empty.style.display="";
+  hideError();
+  const item=itemSelect.value;
+  if(item) buildEnchantList(item);
+  else {enchantsBox.hidden=true;selectionCount.textContent="0 enchants"}
+});
+
+function showError(msg){errorBox.textContent=msg;errorBox.style.display="block"}
+function hideError(){errorBox.style.display="none"}
+
+function itemChip(obj){
+  let ns;
+  let enchants=[];
+  if(typeof obj.I==="string" && data.enchants[obj.I]){
+    ns="book";enchants=[obj.I];
+  }else if(typeof obj.I==="string"){
+    ns=obj.I;
+  }else{
+    ns=obj.L && data.enchants[obj.L.I] ? "book" : (obj.L?.I || "item");
+    enchants=findEnchantments(obj);
+  }
+  const name=itemNames[ns]||pretty(ns);
+  const enchantText=enchants.filter(x=>data.enchants[x]).map(x=>{
+    const meta=data.enchants[x];
+    return enchantNames[x];
+  }).join(", ");
+  let level="";
+  if(ns==="book" && typeof obj.l==="number" && obj.I && data.enchants[obj.I]){
+    const weight=Number(data.enchants[obj.I].weight)||1;
+    const bookLevel=obj.l/weight;
+    if(bookLevel>1 || Number(data.enchants[obj.I].levelMax)>1) level=` ${bookLevel}`;
+  }
+  return `<span class="item-chip ${ns==="book"?"book":"item"}">${escapeHTML(name)}${enchantText?` · ${escapeHTML(enchantText)}${level}`:""}</span>`;
+}
+function findEnchantments(obj){
+  const out=[];
+  for(const k of ["L","R"]){
+    if(obj?.[k]){
+      if(obj[k].I) out.push(obj[k].I);
+      else out.push(...findEnchantments(obj[k]));
+    }
+  }
+  return out;
+}
+function displayStep(inst){
+  const [left,right,levels,xp,work]=inst;
+  return `Combine ${itemChip(left)} with ${itemChip(right)}<small>Cost: ${levels} level${levels===1?"":"s"} · ${xp.toLocaleString()} XP · Prior-work result: ${work}</small>`;
+}
+
+worker.onmessage=e=>{
+  const msg=e.data;
+  if(msg.msg!=="complete") return;
+  progress.classList.remove("show");
+  const elapsed=performance.now()-startTime;
+  solution.classList.add("show");empty.style.display="none";
+  $("timing").textContent=`Completed in ${elapsed<1?Math.round(elapsed*1000)+" µs":elapsed<1000?Math.round(elapsed)+" ms":(elapsed/1000).toFixed(2)+" s"}`;
+
+  const instructions=msg.instructions||[];
+  const maxLevels=msg.extra?.[0]||0;
+  const maxXp=msg.extra?.[1]||0;
+  const minXp=msg.item_obj?.x ?? 0;
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+
+  $("solutionTitle").textContent=instructions.length?"Optimal order found":"No valid order found";
+  $("cost").textContent=instructions.length
+    ? `${xpToLevel(minXp)}–${xpToLevel(maxXp)} levels (${minXp.toLocaleString()}–${maxXp.toLocaleString()} XP)`
+    : "—";
+  $("costMode").textContent=mode==="levels"?"XP objective":"Prior-work objective";
+
+  const steps=$("steps");steps.replaceChildren();
+  instructions.forEach(inst=>{
+    const li=document.createElement("li");li.className="step";li.innerHTML=displayStep(inst);steps.append(li);
+  });
+
+  const note=$("xpNote");
+  if(instructions.length && minXp!==maxXp){
+    note.hidden=false;
+    note.textContent="The XP range reflects the difference between saving up for the full sequence and gaining levels between individual anvil operations.";
+  }else note.hidden=true;
+};
+
+worker.onerror=e=>{
+  progress.classList.remove("show");
+  const detail=[e.message,e.filename && `${e.filename}:${e.lineno}:${e.colno}`].filter(Boolean).join(" · ");
+  showError(detail || "The calculation worker failed.");
+  console.error(e);
+};
+
+let startTime=0;
+calculateButton.addEventListener("click",()=>{
+  const foundation=selectedFoundation();
+  if(!foundation.length) return;
+  const item=itemSelect.value;
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+  hideError();solution.classList.remove("show");empty.style.display="none";
+  progress.classList.add("show");startTime=performance.now();
+  worker.postMessage({msg:"process",item,enchants:foundation,mode});
+});
+
+function updateModeHint(){
+  const mode=document.querySelector('input[name="mode"]:checked').value;
+  $("costMode").textContent=mode==="levels"?"XP objective":"Prior-work objective";
+}
+document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",updateModeHint));
+
+window.addEventListener("beforeunload",()=>{worker.terminate();URL.revokeObjectURL(workerUrl);});
+</script>
+
+<script>
+/* ── Starfield ──────────────────────────────────────────────────
+   Random stars fade in and out on their own slow lifecycles, and
+   rarely a shooting star drifts across the sky before fading.
+   Respects prefers-reduced-motion. */
+(function starfield(){
+  const canvas = document.getElementById('starfield');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const STAR_COUNT = 90;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  let w = 0, h = 0;
+  const stars = [];
+  const shooters = [];
+  let nextShooter = 6 + Math.random() * 14;
+  let last = performance.now();
+
+  function rand(min, max){ return min + Math.random() * (max - min); }
+
+  function makeStar(){
+    return {
+      x: Math.random() * w,
+      y: Math.random() * h * 0.88,
+      r: rand(0.4, 1.3),
+      life: 0,
+      maxLife: rand(4, 12),          // seconds to live
+      delay: rand(0, 14),            // seconds to wait before appearing
+      peak: rand(0.28, 0.75),        // max brightness
+      tint: Math.random() < 0.28 ? '190, 220, 255' : '255, 255, 255'
+    };
+  }
+
+  function resetStar(s){ Object.assign(s, makeStar()); }
+
+  function initStars(){
+    stars.length = 0;
+    for(let i = 0; i < STAR_COUNT; i++) stars.push(makeStar());
+  }
+
+  function resize(){
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function spawnShooter(){
+    const fromLeft = Math.random() < 0.5;
+    const angle = (fromLeft ? 0.30 : Math.PI - 0.30) + rand(-0.16, 0.16);
+    const speed = rand(16, 38);                    // slow drift
+    shooters.push({
+      x: fromLeft ? -70 : w + 70,
+      y: rand(h * 0.05, h * 0.55),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      len: rand(70, 160),
+      life: 0,
+      maxLife: rand(3.2, 6.5),
+      peak: rand(0.45, 0.8)
+    });
+  }
+
+  function drawStars(dt){
+    for(const s of stars){
+      if(s.delay > 0){ s.delay -= dt; continue; }
+      s.life += dt;
+      const t = s.life / s.maxLife;
+      if(t >= 1){ resetStar(s); continue; }
+
+      // smooth ease-in / ease-out envelope
+      const env = t < 0.5 ? (t / 0.5) : (1 - (t - 0.5) / 0.5);
+      const a = env * env * (3 - 2 * env) * s.peak;   // smoothstep
+      if(a <= 0.01) continue;
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(${s.tint}, ${a})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawShooters(dt){
+    nextShooter -= dt;
+    if(nextShooter <= 0){
+      spawnShooter();
+      nextShooter = rand(10, 32);                    // rare
+    }
+
+    for(let i = shooters.length - 1; i >= 0; i--){
+      const sh = shooters[i];
+      sh.life += dt;
+      sh.x += sh.vx * dt;
+      sh.y += sh.vy * dt;
+
+      const t = sh.life / sh.maxLife;
+      if(t >= 1 || sh.x < -260 || sh.x > w + 260 || sh.y < -260 || sh.y > h + 260){
+        shooters.splice(i, 1);
+        continue;
+      }
+
+      const a = Math.sin(Math.PI * t) * sh.peak;     // fade in and out
+      const mag = Math.hypot(sh.vx, sh.vy) || 1;
+      const tx = sh.x - (sh.vx / mag) * sh.len;
+      const ty = sh.y - (sh.vy / mag) * sh.len;
+
+      const grad = ctx.createLinearGradient(sh.x, sh.y, tx, ty);
+      grad.addColorStop(0,   `rgba(255, 255, 255, ${a})`);
+      grad.addColorStop(0.4, `rgba(180, 220, 255, ${a * 0.45})`);
+      grad.addColorStop(1,   'rgba(120, 180, 255, 0)');
+
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(sh.x, sh.y);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255, 255, 255, ${a})`;
+      ctx.arc(sh.x, sh.y, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function frame(now){
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    ctx.clearRect(0, 0, w, h);
+    drawStars(dt);
+    drawShooters(dt);
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  initStars();
+
+  if(reduceMotion){
+    // Draw a single static frame, no animation.
+    drawStars(0.001);
+    return;
+  }
+
+  window.addEventListener('resize', () => { resize(); initStars(); });
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
