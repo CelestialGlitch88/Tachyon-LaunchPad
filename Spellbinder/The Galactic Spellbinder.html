@@ -2,24 +2,67 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
+<script>
+// Set the theme before first paint so there's no flash of the wrong
+// theme while the rest of the page loads.
+(function(){
+  try{
+    var saved=localStorage.getItem("spellbinder-theme");
+    var theme=saved||(window.matchMedia("(prefers-color-scheme: light)").matches?"sun":"onyx");
+    document.documentElement.dataset.theme=theme;
+  }catch(e){document.documentElement.dataset.theme="onyx";}
+})();
+</script>
 <meta name="description" content="Minecraft enchantment ordering calculator">
 <title>Enchantment Calculator · Minecraft Anvil Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&amp;family=Pixelify+Sans:wght@400;500;600;700&amp;family=Press+Start+2P&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#070b12;--panel:#0d1420;--panel2:#111b2a;--line:#223149;
+:root,:root[data-theme="onyx"]{
+  /* True onyx: neutral near-blacks only, nothing structural goes
+     brighter than eigengrau (~#16161d - the gray the eye perceives in
+     total darkness). Only text and the actual color accents (cyan,
+     purple, status colors) are allowed past that; every background,
+     panel, and border stays at or under it. */
+  --bg:#030304;--panel:#09090b;--panel2:#0e0e10;--line:#121215;
   --text:#e8f0fb;--muted:#91a4bc;--accent:#72e7ff;--accent2:#8b7cff;
+  --accent-hover:#8beeff;--accent-contrast:#031019;
   --good:#65e6a5;--warn:#ffd166;--bad:#ff6b7a;
-  --radius:16px;
+  --radius:16px;--font-scale:1.5;
+
+  --surface-1:#07070a;--surface-2:#0b0b0d;--surface-3:#121215;
+  --line-soft:#0c0c0e;--line-hover:#17171b;
+  --text-dim:#9aacc1;--text-dimmer:#71869f;
+  --warn-bg:#0e0d0a;--warn-border:#4e4122;--warn-text:#d8c487;
+  --bad-bg:#0e0a0b;--bad-border:#572532;--bad-text:#ffabb5;
+  --note-bg:#0a0a0c;--note-border:#20334a;--note-text:#8298b0;
+  --chip-book-bg:#121018;--chip-book-text:#d8caff;
+  --chip-item-bg:#0f1512;--chip-item-text:#bff1d7;
+  --cost-bg:#0a0a0c;--cost-border:#28415a;
 
   --ui-font: "Lexend", Inter, ui-sans-serif, system-ui, -apple-system,
              BlinkMacSystemFont, "Segoe UI", sans-serif;
   --display-font: "Space Grotesk", "Lexend", ui-sans-serif, system-ui, sans-serif;
   --pixel-font: "Pixelify Sans", "Lexend", ui-sans-serif, system-ui, sans-serif;
   --retro-font: "Press Start 2P", "Lexend", monospace;
+}
+:root[data-theme="sun"]{
+  --bg:#f4f6fb;--panel:#ffffff;--panel2:#eef2f8;--line:#ccd6e6;
+  --text:#121826;--muted:#56637c;--accent:#0089b3;--accent2:#5a4bd1;
+  --accent-hover:#00a6d9;--accent-contrast:#ffffff;
+  --good:#1a8f5c;--warn:#9c6a00;--bad:#c4293f;
+
+  --surface-1:#eef2f8;--surface-2:#e6ecf5;--surface-3:#dbe6f2;
+  --line-soft:#d7e0ee;--line-hover:#a9bcd6;
+  --text-dim:#3e4b63;--text-dimmer:#5c6b85;
+  --warn-bg:#fff2d6;--warn-border:#e9c266;--warn-text:#6b4a00;
+  --bad-bg:#ffe1e5;--bad-border:#eda4ae;--bad-text:#8a1626;
+  --note-bg:#e9f0fa;--note-border:#c5d6ec;--note-text:#3c4c66;
+  --chip-book-bg:#e8e2ff;--chip-book-text:#4a3aa0;
+  --chip-item-bg:#dcf3e7;--chip-item-text:#1a6e47;
+  --cost-bg:#e7eef9;--cost-border:#bdd0e8;
 }
 *{box-sizing:border-box}
 html{min-height:100%;background:var(--bg)}
@@ -34,68 +77,77 @@ button{cursor:pointer}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
-.app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:34px 0 28px}
+.app{width:min(1760px,calc(100% - 48px));margin:0 auto;padding:24px 0 20px}
 .hero{display:flex;justify-content:space-between;gap:22px;align-items:end;margin-bottom:22px}
 .kicker{
   display:flex;align-items:center;gap:10px;color:var(--accent);
   font-family:var(--retro-font);
-  font-size:.58rem;line-height:1.5;
+  font-size:calc(.58rem * var(--font-scale));line-height:1.5;
   letter-spacing:.04em;text-transform:uppercase;
 }
 .kicker:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--accent);flex:none}
 h1,h2,h3{font-family:var(--display-font)}
-h1{font-size:clamp(2rem,4vw,3.25rem);line-height:1.03;letter-spacing:-.045em;margin:8px 0 8px}
+h1{font-size:clamp(calc(2rem * var(--font-scale)),calc(4vw * var(--font-scale)),calc(3.25rem * var(--font-scale)));line-height:1.03;letter-spacing:-.045em;margin:8px 0 8px}
 .subtitle{color:var(--muted);max-width:720px;margin:0}
-.credits{font-size:.78rem;color:#647992;text-align:right;white-space:nowrap}
+.credits{font-size:calc(.78rem * var(--font-scale));color:var(--text-dimmer);text-align:right;white-space:nowrap}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.82fr);gap:18px}
 .panel{
   background:var(--panel);
   border:1px solid var(--line);border-radius:var(--radius);
   overflow:hidden;
 }
-.panel-head{padding:18px 20px 14px;border-bottom:1px solid #1b2940;display:flex;justify-content:space-between;gap:15px;align-items:center}
-.panel-head h2{font-size:1rem;margin:0;letter-spacing:-.01em}
-.panel-body{padding:18px 20px}
+.panel-head{padding:26px 22px 20px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:15px;align-items:center}
+.panel-head h2{font-size:calc(1rem * var(--font-scale));margin:0;letter-spacing:-.01em}
+.panel-body{padding:28px 22px;min-height:560px}
 .field{display:grid;gap:7px;margin-bottom:16px}
-.label{font-size:.73rem;color:#8195ae;font-weight:750;text-transform:uppercase;letter-spacing:.1em}
+.label{font-size:calc(.73rem * var(--font-scale));color:var(--text-dimmer);font-weight:750;text-transform:uppercase;letter-spacing:.1em}
 select{
-  width:100%;padding:13px 40px 13px 14px;color:var(--text);background:#0a111b;
-  border:1px solid #293a54;border-radius:11px;outline:none;
+  width:100%;padding:13px 40px 13px 14px;color:var(--text);background:var(--surface-1);
+  border:1px solid var(--line);border-radius:11px;outline:none;
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  cursor:pointer;
+  background-image:
+    linear-gradient(45deg,transparent 50%,var(--text-dimmer) 50%),
+    linear-gradient(135deg,var(--text-dimmer) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 54%,calc(100% - 15px) 54%;
+  background-size:5px 5px;background-repeat:no-repeat;
 }
+select:hover{border-color:var(--line-hover)}
 select:focus{border-color:var(--accent)}
+select option{background:var(--panel);color:var(--text)}
 .explain{
-  border:1px solid #1e3048;background:#0a121e;border-radius:12px;padding:13px 15px;
-  color:#9aacc1;font-size:.82rem;margin-bottom:17px
+  border:1px solid var(--line-soft);background:var(--surface-1);border-radius:12px;padding:13px 15px;
+  color:var(--text-dim);font-size:calc(.82rem * var(--font-scale));margin-bottom:17px
 }
-.explain strong{color:#d9e6f5}
-.explain summary{cursor:pointer;color:#c9d8e9;font-weight:700}
-.enchant-wrap{border:1px solid #1d2c42;border-radius:13px;overflow:hidden;background:#080f18}
+.explain strong{color:var(--text)}
+.explain summary{cursor:pointer;color:var(--text);font-weight:700}
+.enchant-wrap{border:1px solid var(--line-soft);border-radius:13px;overflow:hidden;background:var(--surface-1)}
 .table-scroll{overflow:auto;max-height:510px}
 table{width:100%;border-collapse:collapse;min-width:390px}
 th{
-  position:sticky;top:0;z-index:2;background:#0d1724;
-  color:#7288a3;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;padding:10px 7px;
+  position:sticky;top:0;z-index:2;background:var(--surface-2);
+  color:var(--text-dimmer);font-size:calc(.68rem * var(--font-scale));text-transform:uppercase;letter-spacing:.08em;padding:10px 7px;
 }
-th:first-child{text-align:left;padding-left:12px;min-width:165px}
-td{padding:6px 6px;border-top:1px solid #172338;text-align:center}
+th:first-child{text-align:left;padding-left:12px;min-width:calc(165px * var(--font-scale))}
+td{padding:6px 6px;border-top:1px solid var(--line-soft);text-align:center}
 td:first-child{text-align:left;padding-left:12px}
-tr.group1{background:#0b1420}
-tr.group2{background:#0d1724}
+tr.group1{background:var(--surface-1)}
+tr.group2{background:var(--surface-2)}
 .enchant-name{
-  display:inline-flex;align-items:center;gap:6px;color:#d7e4f3;
+  display:inline-flex;align-items:center;gap:6px;color:var(--text);
   font-family:var(--pixel-font);
-  font-size:.9rem;letter-spacing:.01em;
-  max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  font-size:calc(.9rem * var(--font-scale));letter-spacing:.01em;
+  max-width:calc(160px * var(--font-scale));white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
-.enchant-name:before{content:"◆";font-size:.5rem;color:#58718e}
+.enchant-name:before{content:"◆";font-size:calc(.5rem * var(--font-scale));color:var(--text-dimmer)}
 .level-button{
   width:36px;height:32px;padding:0;
-  border:1px solid #2a3d58;border-radius:8px;
-  background:#111d2c;color:#71869f;
-  font-size:.78rem;font-weight:800;
+  border:1px solid var(--line);border-radius:8px;
+  background:var(--surface-1);color:var(--text-dimmer);
+  font-size:calc(.78rem * var(--font-scale));font-weight:800;
 }
-.level-button:hover:not(:disabled){border-color:#58708e;color:#dbe8f6}
-.level-button.on{color:#041018;background:var(--accent);border-color:#b9f5ff}
+.level-button:hover:not(:disabled){border-color:var(--line-hover);color:var(--text)}
+.level-button.on{color:var(--accent-contrast);background:var(--accent);border-color:var(--accent-hover)}
 .level-button.off{opacity:.65}
 .level-button:disabled{cursor:not-allowed;opacity:.22}
 
@@ -107,14 +159,14 @@ tr.group2{background:#0d1724}
 .toggle,.radio{
   display:inline-flex;align-items:center;gap:9px;
   padding:11px 15px;
-  border:1px solid #203149;
+  border:1px solid var(--line-soft);
   border-radius:10px;
-  background:#0a121e;
-  color:#9fb1c7;
-  font-size:.8rem;
+  background:var(--surface-1);
+  color:var(--text-dim);
+  font-size:calc(.8rem * var(--font-scale));
   cursor:pointer;
 }
-.toggle:hover,.radio:hover{border-color:#3a506d;color:#d6e3f1}
+.toggle:hover,.radio:hover{border-color:var(--line-hover);color:var(--text)}
 input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
 
 /* Actions row: grid centers the primary button, padding keeps it off the border */
@@ -136,72 +188,81 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
   padding:14px 26px;
   font-family:var(--display-font);
   font-weight:700;
-  font-size:.95rem;
+  font-size:calc(.95rem * var(--font-scale));
   letter-spacing:.01em;
-  color:#031019;
+  color:var(--accent-contrast);
   background:var(--accent);
   white-space:nowrap;
 }
-.primary:hover:not(:disabled){background:#8beeff}
+.primary:hover:not(:disabled){background:var(--accent-hover)}
 .primary:disabled{opacity:.35;cursor:not-allowed}
 
-.count{font-size:.75rem;color:#71869f}
-.result-empty{color:#758aa3;font-size:.88rem}
-.progress{display:none;align-items:center;gap:10px;padding:12px 14px;border:1px solid #24415b;border-radius:11px;background:#0b1825;color:#a7bad0;margin-bottom:14px}
+.count{font-size:calc(.75rem * var(--font-scale));color:var(--text-dimmer)}
+.result-empty{color:var(--text-dimmer);font-size:calc(.88rem * var(--font-scale))}
+.progress{display:none;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--surface-1);color:var(--text-dim);margin-bottom:14px}
 .progress.show{display:flex}
-.spinner{width:16px;height:16px;border:2px solid #35506d;border-top-color:var(--accent);border-radius:50%}
+.spinner{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%}
 .solution{display:none}
 .solution.show{display:block}
-.result-title{margin:0 0 5px;font-size:1.18rem}
-.timing{color:#6f849d;font-size:.75rem;margin:0 0 14px}
+.result-title{margin:0 0 5px;font-size:calc(1.18rem * var(--font-scale))}
+.timing{color:var(--text-dimmer);font-size:calc(.75rem * var(--font-scale));margin:0 0 14px}
 .cost{
   display:flex;justify-content:space-between;align-items:end;gap:12px;padding:14px;
-  background:#0f1e2c;border:1px solid #28415a;border-radius:13px;margin-bottom:16px
+  background:var(--cost-bg);border:1px solid var(--cost-border);border-radius:13px;margin-bottom:16px
 }
-.cost-label{color:#7f96af;font-size:.7rem;text-transform:uppercase;letter-spacing:.09em}
-.cost-value{font-family:var(--display-font);font-size:1.45rem;font-weight:700;letter-spacing:-.03em;color:#eaf8ff}
-.steps-title{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:#7187a0;margin:0 0 9px}
+.cost-label{color:var(--text-dimmer);font-size:calc(.7rem * var(--font-scale));text-transform:uppercase;letter-spacing:.09em}
+.cost-value{font-family:var(--display-font);font-size:calc(1.45rem * var(--font-scale));font-weight:700;letter-spacing:-.03em;color:var(--text)}
+.steps-title{font-size:calc(.78rem * var(--font-scale));text-transform:uppercase;letter-spacing:.1em;color:var(--text-dimmer);margin:0 0 9px}
 .steps{list-style:none;padding:0;margin:0;display:grid;gap:9px}
 .step{
-  position:relative;padding:12px 13px 12px 46px;border:1px solid #1d2d43;background:#0a121e;border-radius:11px;
-  font-size:.83rem;color:#d5e2ef
+  position:relative;padding:12px 13px 12px 46px;border:1px solid var(--line-soft);background:var(--surface-1);border-radius:11px;
+  font-size:calc(.83rem * var(--font-scale));color:var(--text)
 }
 .step:before{
   content:counter(step);counter-increment:step;position:absolute;left:13px;top:12px;
   width:24px;height:24px;border-radius:7px;display:grid;place-items:center;
-  background:#14283a;color:var(--accent);
-  font-family:var(--pixel-font);font-size:.8rem;font-weight:700;line-height:1;
+  background:var(--surface-3);color:var(--accent);
+  font-family:var(--pixel-font);font-size:calc(.8rem * var(--font-scale));font-weight:700;line-height:1;
 }
 .steps{counter-reset:step}
-.step small{display:block;color:#71869f;font-size:.72rem;margin-top:5px}
+.step small{display:block;color:var(--text-dimmer);font-size:calc(.72rem * var(--font-scale));margin-top:5px}
 .item-chip{
   display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;
-  background:#152235;color:#dceaf8;font-weight:600;
-  font-family:var(--pixel-font);font-size:.88rem;letter-spacing:.01em;
+  background:var(--surface-3);color:var(--text);font-weight:600;
+  font-family:var(--pixel-font);font-size:calc(.88rem * var(--font-scale));letter-spacing:.01em;
 }
-.item-chip.book{background:#241f42;color:#d8caff}
-.item-chip.item{background:#182b25;color:#bff1d7}
+.item-chip.book{background:var(--chip-book-bg);color:var(--chip-book-text)}
+.item-chip.item{background:var(--chip-item-bg);color:var(--chip-item-text)}
 .note,.warning,.error{
-  margin-top:13px;padding:11px 12px;border-radius:10px;font-size:.76rem
-}
-.note{background:#0c1722;border:1px solid #20334a;color:#8298b0}
-.warning{display:none;background:#241e0e;border:1px solid #4e4122;color:#d8c487}
-.error{display:none;background:#2b1118;border:1px solid #572532;color:#ffabb5}
+  margin-top:13px;padding:11px 12px;border-radius:10px;font-size:calc(.76rem * var(--font-scale))}
+.note{background:var(--note-bg);border:1px solid var(--note-border);color:var(--note-text)}
+.warning{display:none;background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn-text)}
+.error{display:none;background:var(--bad-bg);border:1px solid var(--bad-border);color:var(--bad-text)}
 .info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:18px}
-.info-card{padding:12px;border:1px solid #1b2b42;background:#0a111c;border-radius:11px}
-.info-card b{display:block;font-size:.75rem;margin-bottom:3px;color:#d8e6f4}
-.info-card span{font-size:.7rem;color:#70859e}
-footer{padding:20px 2px 4px;color:#5d7189;font-size:.72rem;display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
-footer a{color:#7890ab}
+.info-card{padding:12px;border:1px solid var(--line-soft);background:var(--surface-1);border-radius:11px}
+.info-card b{display:block;font-size:calc(.75rem * var(--font-scale));margin-bottom:3px;color:var(--text)}
+.info-card span{font-size:calc(.7rem * var(--font-scale));color:var(--text-dimmer)}
+footer{padding:20px 2px 4px;color:var(--text-dimmer);font-size:calc(.72rem * var(--font-scale));display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap}
+footer a{color:var(--text-dim)}
 .license{margin-top:12px}
+
+.theme-toggle{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 13px;
+  border:1px solid var(--line);border-radius:10px;
+  background:var(--surface-1);color:var(--text-dim);
+  font-size:calc(.75rem * var(--font-scale));font-weight:700;
+  cursor:pointer;white-space:nowrap;
+}
+.theme-toggle:hover{border-color:var(--line-hover);color:var(--text)}
 
 @media(max-width:850px){.layout{grid-template-columns:1fr}.credits{display:none}}
 @media(max-width:560px){
   .app{width:min(100% - 16px,1180px);padding-top:22px}
   .panel-body,.panel-head{padding-left:14px;padding-right:14px}
-  h1{font-size:2rem}
+  h1{font-size:calc(2rem * var(--font-scale))}
   .info-grid{grid-template-columns:1fr}
-  .enchant-name{max-width:135px}
+  .enchant-name{max-width:calc(135px * var(--font-scale))}
   table{min-width:360px}
 
   /* Stack the actions row on mobile */
@@ -244,18 +305,19 @@ button[data-action="calculate"]:hover:not(:disabled) {
 @media(prefers-reduced-motion: reduce){
   #starfield{animation:none;opacity:.4}
 }
+:root[data-theme="sun"] #starfield{display:none}
 .app{position:relative;z-index:1}
 
 /* Advancement toasts: transform only, compositor-driven, and they only
    ever run for a couple seconds after a rare event - not a continuous
    cost like the old canvas starfield was. */
-#achievementToast,#overenchanterToast{
+#achievementToast{
   position:fixed;top:16px;right:16px;z-index:50;
   transform:translateX(140%);
   transition:transform .35s cubic-bezier(.2,.8,.2,1);
   pointer-events:none;
 }
-#achievementToast.show,#overenchanterToast.show{transform:translateX(0)}
+#achievementToast.show{transform:translateX(0)}
 #achievementToast{
   display:flex;align-items:center;gap:10px;
   padding:10px 16px 10px 10px;
@@ -268,22 +330,14 @@ button[data-action="calculate"]:hover:not(:disabled) {
   background:linear-gradient(135deg,#7a5a1e,#3d2c0d);
   border:2px solid #cba135;border-radius:2px;
   display:flex;align-items:center;justify-content:center;
-  font-size:20px;
+  font-size:calc(20px * var(--font-scale));
 }
 #achievementToast .txt{display:flex;flex-direction:column;gap:2px}
-#achievementToast .kicker{color:#ffd75e;font-size:.7rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
-#achievementToast .title{color:#fff;font-size:.85rem;font-weight:700}
-#achievementToast .sub{color:#b8a878;font-size:.68rem}
-/* Overenchanter: the real banner graphic, reserved for when the worker
-   actually gets killed to reclaim resources - image-rendering:pixelated
-   keeps it crisp at 2x instead of getting blurred by browser smoothing. */
-#overenchanterToast img{
-  display:block;width:640px;max-width:80vw;height:auto;
-  image-rendering:pixelated;
-  filter:drop-shadow(0 4px 10px #0008);
-}
+#achievementToast .kicker{color:#ffd75e;font-size:calc(.7rem * var(--font-scale));font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+#achievementToast .title{color:#fff;font-size:calc(.85rem * var(--font-scale));font-weight:700}
+#achievementToast .sub{color:#b8a878;font-size:calc(.68rem * var(--font-scale))}
 @media(prefers-reduced-motion: reduce){
-  #achievementToast,#overenchanterToast{transition:none}
+  #achievementToast{transition:none}
 }
 </style>
 </head>
@@ -297,9 +351,6 @@ button[data-action="calculate"]:hover:not(:disabled) {
     <div class="sub"></div>
   </div>
 </div>
-<div id="overenchanterToast" aria-hidden="true">
-  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAABACAYAAABr564eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEJElEQVR4nO3dPWsUQRjA8edEbYJISkESPGvFIq34KdLZiI1tsLJRtLGStDZic10+hR6kSiFae0IIKDYKkiJRiUUymJvsZGZ2XnZvn/+vSvb29VY2f2ZXdiRnHTVMA4BFNmqaeKH2XgBAX5y+Kh6JiKyvr3e0KwBQxtbWlvlxrgQpQABqjYTyA6CEXYIUIAC1vAW4s7NTc38AIJu1tbXG6aYEKUAAal10fUD5AVh05jrmKkEKEIBaXAABqMUFEIBaXAABqMUFEIBazrvAQzebfWmcPh7fyLLe0PXEzo//cn13rn8LRo5z49pXzn+3KEAAaqkrQN9f3Np/kfnL3x3qCxQgALV6UYCXDr82Tv99+VrlPXFrO2ZoLxc6BhS6vbZFG3M8rmMI3bZvG7FjcPb8pccCQ74T17yl9hV5UIAA1OqkAO3iu3fnauN87z4cz1eiBH3VYc/XtrByFVvo5z4p63eVn+/30G2Ezh+6nVghZRp7bKX2FXlQgADUqlKAvuL79HlfRERu3VxqnK9ECcaOW8Wup/SzaalKr7/WNroy5GPThAIEoFaRAgwd47OZEjRMEZYswVSlxnZC19d2HC5lf2P3bYhKjTuiLgoQgFpZCjC0+FxjfeZ3uwDt+bsoQbuoXJ/X2p5ru7HlV/L/v9bYRtN2YtfX5tzmPj/cHe4WBQhALedb4WLeCWIK8PZJqS1fOT8sXSUYyiw/+3YgIiJLy9dbrQeADvY7QXgrHAD1itwF/vHrj4i4SzC2/OyxwWebx1fvyWQiIiLb29uxuwgAFCAAvYoU4MMnx2X25uV9EfGPCdrs4nuw8UpERFZWVkREZHd3N3UXAYACBKBXlgL8uf937vfV1VURCS9B1xifKT27/N5uPhYR7gIDSEMBAlArSwGaAnv/cU9ERJ4+uisiIi9eT0XkbAnufT+YW94uPrv8nm/MP6Noyi/FbDZrnD4ej5PXrY35Lvv23fV1v9AfFCAAtbLeBQ4tQVts8aWM+fmqgGoA9KAAAahV5DlAXwlOp9O5+c1dXSNn8aVqW4yhY4z28vZyvu2Grt8ldf0hy9Y+Bnv+rs4R+o8CBKBW0XeCuErQvgvcp+JLlVqMofURu/7Q+VPGSGOPrdQx+I6l9DnC4qAAAahV5a1wdgm6Ph8S37iVzVUPseNnpZ1XObEF1NUxtN1+7DlC/1GAANSqUoDGIpaeazzJN+5Tugq6qo4c412hY3ClUW6gAAGoVbUA+8D1LJf9uW+50Pl8+xGr6/XnqKbQY8i9HdddYt/yGC4KEIBaWd4KBwB9xlvhAMDCBRCAWlwAAajFBRCAWlwAAajlfA7Q3DXhbjCARWXf/bVRgADUGp36ufF5QAAYGp4DBKDeqGEaJQhgkEz5ycm1jwIEoFZTARpH1fYCAOqYu+ZRgADU+gcdQUT6JvDs4QAAAABJRU5ErkJggg==" alt="Achievement Get! Overenchanter">
-</div>
 <main class="app">
   <header class="hero">
     <div>
@@ -307,7 +358,10 @@ button[data-action="calculate"]:hover:not(:disabled) {
       <h1>The Galactic Spellbinder</h1>
       <p class="subtitle">Find a cheap, valid order for combining enchanted books and gear without wandering into <b>Too Expensive!</b> territory.</p>
     </div>
-    <div class="credits">Offline · No libraries · No tracking</div>
+    <div style="display:flex;flex-direction:column;align-items:end;gap:8px">
+      <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle light/dark theme"></button>
+      <div class="credits">Offline · No libraries · No tracking</div>
+    </div>
   </header>
 
   <section class="layout">
@@ -398,12 +452,12 @@ button[data-action="calculate"]:hover:not(:disabled) {
   </section>
 
   <footer>
-    <span>Based on iamcal's enchant-order, made by GalacticLagg19. UI Copyright © 2026 GalacticLagg19 under GNU Affero GPL 3.0</span>
+    <span>Based on iamcal's enchant-order, made by GalacticLagg19. Interface and worker optimizations Copyright © 2026 GalacticLagg19 under GNU Affero GPL 3.0</span>
     <span><a href="https://github.com/iamcal/enchant-order" target="_blank" rel="noopener">Original project</a> · <a href="https://minecraft.wiki/w/Anvil_mechanics" target="_blank" rel="noopener">Anvil mechanics</a></span>
   </footer>
   <details class="license" open="">
     <summary>License &amp; attribution</summary>
-    <p style="font-size:.7rem;color:#60758d">Original enchant-order code is licensed under the MIT License. Copyright © 2021 Cal Henderson. This page preserves that attribution while adding the GalacticLagg19 interface and packaging changes.</p>
+    <p style="font-size:.7rem;color:var(--text-dimmer)">Original enchant-order code is licensed under the MIT License. Copyright © 2021 Cal Henderson. This page preserves that attribution while adding the GalacticLagg19 interface, worker optimizations, and packaging changes.</p>
   </details>
 </main>
 
@@ -506,10 +560,6 @@ function wikiLink(ns){
   return `https://${wikiLang}.minecraft.wiki/w/${encodeURIComponent(pretty(ns).replaceAll(" ","_"))}`;
 }
 
-data.items.forEach(ns=>{
-  const o=document.createElement("option");
-  o.value=ns;o.textContent=itemNames[ns]||pretty(ns);itemSelect.append(o);
-});
 
 function incompatibleGroup(start){
   const seen=new Set(), queue=[start], out=[];
@@ -755,14 +805,6 @@ function showAchievement(title,sub){
   toastTimer=setTimeout(()=>toast.classList.remove("show"),4000);
 }
 
-let overenchanterTimer=null;
-function showOverenchanter(){
-  const toast=$("overenchanterToast");
-  toast.classList.add("show");
-  clearTimeout(overenchanterTimer);
-  overenchanterTimer=setTimeout(()=>toast.classList.remove("show"),4000);
-}
-
 let startTime=0;
 let progressTimer=null;
 let stillWaitingTimer=null;
@@ -821,7 +863,6 @@ function runCalculation(){
   hardKillTimer=setTimeout(()=>{
     cancelCalculation();
     showError("Auto-cancelled after 20s. If your hardware genuinely needs longer than that for a sane selection, use Cancel manually instead of waiting on this - but past ~28 enchants no hardware will finish anyway.");
-    showOverenchanter();
   },20000);
   worker.postMessage({msg:"process",item,enchants:foundation,mode});
 }
@@ -841,6 +882,19 @@ function updateModeHint(){
 document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",updateModeHint));
 
 window.addEventListener("beforeunload",()=>{worker.terminate();URL.revokeObjectURL(workerUrl);});
+
+const themeToggle=$("themeToggle");
+function updateThemeToggleLabel(){
+  const theme=document.documentElement.dataset.theme;
+  themeToggle.textContent=theme==="sun"?"☀ Sun":"● Onyx";
+}
+updateThemeToggleLabel();
+themeToggle.addEventListener("click",()=>{
+  const next=document.documentElement.dataset.theme==="sun"?"onyx":"sun";
+  document.documentElement.dataset.theme=next;
+  try{localStorage.setItem("spellbinder-theme",next);}catch(e){}
+  updateThemeToggleLabel();
+});
 </script>
 
 </body></html>
